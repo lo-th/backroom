@@ -7,3 +7,8 @@ three.js experimental backroom<br>
 XSAD or ZSQD to move<br>
 C to crouch<br>
 SPACE to jump<br>
+
+### About
+
+Generator use pieces of D&D dungeon generator<br>
+from Mystic Waffle<br>

@@ -26,7 +26,7 @@ export class Pool {
 
         // font
 
-        this.font = await new FontLoader().loadAsync( './assets/font/helvetiker_bold.typeface.json' );
+        this.font = await new FontLoader().loadAsync( './assets/font/font.json' );
 
         // envmap
 

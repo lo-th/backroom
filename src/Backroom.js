@@ -589,8 +589,8 @@ export class Backroom {
 
 		let g = new TextGeometry( txt, {
 			font: this.font,
-			size: name ? 0.2:0.4,
-			depth: traps === undefined ? 0.02 : 0.04,
+			size: name ? 0.1:0.2,
+			depth: traps === undefined ? 0.01 : 0.02,
 			curveSegments: 12,
 			bevelEnabled: false
 		});
@@ -615,7 +615,7 @@ export class Backroom {
 		if(textWall.dir === 'east') {dx = -1; offx = 0}
 
 		g.rotateY(textWall.r)
-		g.translate( offx+textWall.x+dx, offy+1, offz+textWall.y+dy );
+		g.translate( offx+textWall.x+dx, offy+1.5, offz+textWall.y+dy );
 		
 		g.deleteAttribute('color')
 
