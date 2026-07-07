@@ -3,6 +3,7 @@ import * as THREE from 'three/webgpu';
 import { Octree } from 'three/addons/math/Octree.js';
 import { OctreeHelper } from 'three/addons/helpers/OctreeHelper.js';
 import { Capsule } from 'three/addons/math/Capsule.js'
+//import { Sphere } from 'three/addons/math/Sphere.js'
 import { CapsuleHelper } from './helpers/CapsuleHelper.js'
 import { RayHelper } from './helpers/RayHelper.js'
 
@@ -57,7 +58,7 @@ export class FpsView {
 		this.worldOctree = new Octree();
 
 		this.playerTarget = new THREE.Vector3();
-		this.camDecal = new THREE.Vector3(0,1,0)
+		this.camDecal = new THREE.Vector3(0,this.height,0)
 		this.playerSpherical = new THREE.Spherical( 0.0001, Math.PI*0.5, 0 );
 		this.targetSpherical = new THREE.Spherical( 0.0001, Math.PI*0.5, 0 );
 
@@ -66,6 +67,7 @@ export class FpsView {
 		this.playerMesh = new CapsuleHelper(this.radius, this.height );
 		this.playerMesh.visible = false
 		this.playerCollider = new Capsule( new THREE.Vector3( 0, this.radius, 0 ), new THREE.Vector3( 0, this.height, 0 ), this.radius );
+		//this.playerCollider = new Sphere( new THREE.Vector3( 0, this.radius, 0 ), this.radius );
 		scene.add( this.playerMesh );
 
 		this.playerVelocity = new THREE.Vector3();
@@ -77,6 +79,8 @@ export class FpsView {
 		this.lastTime = 0;
 		this.isMouseLock = false;
 		this.enabled = true;
+
+		this.targetEnd = this.height
 
 
 		if(this.useRayCast){
@@ -340,7 +344,6 @@ export class FpsView {
 			moving = true;
 		}
 
-		//this.playerCollider.end.y = this.isCrouch ? this.radius : this.height 
 
 		this.playerSpeed = moving ? ( speedUp ? WALK_SPEED : RUN_SPEED ) : 8
 
@@ -349,7 +352,10 @@ export class FpsView {
 	toggleCrouch(){
 
 		this.isCrouch = !this.isCrouch
-		this.playerCollider.end.y = this.isCrouch ? this.radius : this.height
+		this.targetEnd = this.isCrouch ? this.radius : this.height
+		if(this.playerOnFloor) this.playerCollider.end.y = this.isCrouch ? 
+			this.playerCollider.start.y  : 
+		    this.playerCollider.start.y + this.height
 
 	}
 
@@ -386,6 +392,10 @@ export class FpsView {
 			this.teleport( this.startposition, this.starDirection )
 		}
 
+		if(this.camDecal.y !== this.targetEnd ){
+			this.camDecal.y = lerp(this.camDecal.y, this.targetEnd, deltaTime*5)
+		}
+
 
 
 	    this.playerSpherical.phi = lerp(this.playerSpherical.phi, this.targetSpherical.phi, deltaTime*10)
@@ -397,7 +407,7 @@ export class FpsView {
 		//let damping = Math.exp( - 4 * deltaTime ) - 1;
 		let damping = Math.exp( - this.playerSpeed * deltaTime ) - 1;
 
-		if ( ! this.playerOnFloor ) {
+		if ( !this.playerOnFloor ) {
 
 			this.playerVelocity.y -= GRAVITY * deltaTime;
 
@@ -492,7 +502,7 @@ export class FpsView {
 
 		if(!this.enabled) return
 
-		this.playerTarget.copy( this.playerCollider.end );
+		this.playerTarget.copy( this.playerCollider.start ).add(this.camDecal);
 		this.camera.position.setFromSpherical( this.playerSpherical ).add( this.playerTarget );
 		this.camera.lookAt( this.playerTarget );
 
