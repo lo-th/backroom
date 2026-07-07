@@ -50,7 +50,7 @@ export class FpsView {
 		this.camera = camera
 		this.isCrouch = false
 
-		this.camera.order = 100000
+		//this.camera.order = 100000
 
 		this.useRayCast = false
 
@@ -218,7 +218,7 @@ export class FpsView {
 
 	keyDown(e){
 
-		if( e.code === 'ControlLeft' ) this.toggleCrouch()
+		if( e.code === 'KeyC' ) this.toggleCrouch()
 		Key[ e.code ] = true;
  
 	}

@@ -21,8 +21,6 @@ let oldPosition = new THREE.Vector3(0, 80, 120)
 
 
 
-//init()
-
 async function init() {
 
     container = document.getElementById( 'container' );
@@ -34,7 +32,8 @@ async function init() {
     scene.background = new THREE.Color( 0x000000 );
     scene.fog = new THREE.FogExp2( 0x000000, 0.05 )
 
-    renderer = new THREE.WebGPURenderer({ antialias:false });
+    renderer = new THREE.WebGPURenderer({ antialias:false })
+    await renderer.init();;
     //
     renderer.setPixelRatio( 0.75 );
     renderer.setSize( window.innerWidth, window.innerHeight );
@@ -44,22 +43,24 @@ async function init() {
     renderer.toneMappingExposure = 0.1;
     //renderer.shadowMap.enabled = true;
     
-    await renderer.init();
+    
     container.appendChild( renderer.domElement );
 
     //const pmremGenerator = new THREE.PMREMGenerator( renderer );
 
     camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 1000 );
-    camera.position.set(0,0,2)
+    camera.updateProjectionMatrix();
+    camera.position.set(0,0,0)
     scene.add(camera);
 
     controls = new OrbitControls( camera, renderer.domElement );
-    controls.target.set( 0, 0, 0 );
+    controls.target.set( 0, 0, 1 );
     controls.enabled = false
     controls.addEventListener( 'change', ()=>{
         oldTarget.copy(controls.target)
         oldPosition.copy(camera.position)
     });
+    
 
     ambient = new THREE.AmbientLight( '#ffffff', 0 );
     scene.add( ambient );
@@ -117,7 +118,7 @@ function intro(){
 
     let g = new TextGeometry( 'Backroom 0.0.1', {
         font: pool.font,
-        size: name ? 0.2:0.4,
+        size:  0.2,
         depth: 0.2,
         curveSegments: 12,
         bevelEnabled: false
@@ -132,10 +133,13 @@ function intro(){
     let mat = new THREE.MeshStandardMaterial({ color:0x9f9e6e })
     text = new THREE.Mesh( g, mat )
 
+    text.position.z = -2
+
     scene.add(text)
 
     isIntro = true
 
+    console.log(camera)
 
 }
 
