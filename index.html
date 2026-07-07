@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backroom 0.0.1</title>
+</head>
+<body>
+<body style="background-color:#000; margin:0; padding:0; overflow:hidden; font-family:Monospace;">
+    <div id="container"></div>
+
+
+    <script type="module">
+
+        import * as UIL from './src/uil.module.min.js';
+        import * as THREE from 'three/webgpu';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+
+        import { FpsView } from './src/FpsView.js'
+        import { Backroom } from './src/Backroom.js';
+        import { PostProd } from './src/PostProd.js';
+        import { Sound } from './src/Sound.js';
+        import { Pool } from './src/Pool.js';
+        import { Gui } from './src/Gui.js';
+
+      
+        let renderer, scene, camera, controls, container, decription, renderPipeline;
+        let timer, gui, ambient;
+
+        let fpsView, backroom, pool, sound, text, subText
+        let isIntro = false
+
+        let oldTarget = new THREE.Vector3(0, 1, 0)
+        let oldPosition = new THREE.Vector3(0, 80, 120)
+
+        init();
+
+        async function init() {
+
+            container = document.getElementById( 'container' );
+
+            timer = new THREE.Timer();
+            timer.connect( document );
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color( 0x000000 );
+            scene.fog = new THREE.FogExp2( 0x000000, 0.05 )
+
+            renderer = new THREE.WebGPURenderer({ antialias:false });
+            //
+            renderer.setPixelRatio( 0.75 );
+            renderer.setSize( window.innerWidth, window.innerHeight );
+            renderer.setAnimationLoop( render );
+            //renderer.inspector = new Inspector();
+            renderer.toneMapping = THREE.NeutralToneMapping;
+            renderer.toneMappingExposure = 0.1;
+            //renderer.shadowMap.enabled = true;
+            
+            await renderer.init();
+            container.appendChild( renderer.domElement );
+
+            //const pmremGenerator = new THREE.PMREMGenerator( renderer );
+
+            camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 1000 );
+            camera.position.set(0,0,2)
+            scene.add(camera);
+
+            controls = new OrbitControls( camera, renderer.domElement );
+            controls.target.set( 0, 0, 0 );
+            controls.enabled = false
+            controls.addEventListener( 'change', ()=>{
+                oldTarget.copy(controls.target)
+                oldPosition.copy(camera.position)
+            });
+
+            ambient = new THREE.AmbientLight( '#ffffff', 0 );
+            scene.add( ambient );
+
+
+            window.addEventListener( 'resize', onWindowResize );
+
+            // preload
+
+            pool = new Pool( renderer );
+            await pool.postload()
+
+            scene.environment = pool.textures.envmap;
+            scene.background = pool.textures.envmap;
+            scene.environmentIntensity = 20
+            scene.backgroundIntensity = 0
+
+            gui = new Gui()
+
+            renderPipeline = new PostProd( renderer, scene, camera, gui.ui )
+
+            fpsView = new FpsView( container, scene, camera, pool.textures )
+
+            intro()
+
+            // load
+
+            await pool.load()
+
+            sound = new Sound( scene, camera );
+            await sound.load()
+
+            //
+             
+            backroom = new Backroom( scene, pool.meshs, pool.font, pool.textures, fpsView, sound )
+            backroom.preGenerate()
+
+            subText.innerHTML = 'Click To Enter'
+            container.style.cursor = 'pointer'
+            container.addEventListener('pointerdown', start )
+
+            gui.init( backroom, switchView )
+
+
+        }
+
+        function intro(){
+
+            subText = document.createElement( 'div' );
+            let unselectable = '-o-user-select:none; -ms-user-select:none; -khtml-user-select:none; -webkit-user-select:none; -moz-user-select: none; pointer-events:none; ';
+
+            subText.style.cssText = unselectable + 'position:absolute; top:56%; left:0px; width:100%; text-align:center; color:#ffffff; font-size:16px; font-weight:bold;'
+            subText.innerHTML = 'Loading ...'
+            container.appendChild( subText );
+
+            let g = new TextGeometry( 'Backroom 0.0.1', {
+                font: pool.font,
+                size: name ? 0.2:0.4,
+                depth: 0.2,
+                curveSegments: 12,
+                bevelEnabled: false
+            });
+
+            g.computeBoundingBox();
+            let offx = - 0.5 * ( g.boundingBox.max.x - g.boundingBox.min.x );
+            let offy = - 0.5 * ( g.boundingBox.max.y - g.boundingBox.min.y );
+            let offz = - 0.5 * ( g.boundingBox.max.z - g.boundingBox.min.z );
+            g.translate( offx, offy+0.034, offz );
+
+            let mat = new THREE.MeshStandardMaterial({ color:0x9f9e6e })
+            text = new THREE.Mesh( g, mat )
+
+            scene.add(text)
+
+            isIntro = true
+
+
+        }
+
+        function start(e){
+
+            if ( document.pointerLockElement === null ) { document.body.requestPointerLock(); }
+
+            isIntro = false
+            scene.remove(text)
+            container.removeChild( subText );
+
+            container.style.cursor = 'auto'
+            container.removeEventListener('pointerdown', start )
+
+            backroom.generate(true)
+
+        }
+
+        function onWindowResize() {
+
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize( window.innerWidth, window.innerHeight );
+
+        }
+
+        async function render( stamp ) {
+
+            timer.update(stamp);
+            let delta = timer.getDelta()
+
+            if(isIntro){
+                let ellapsed = timer.getElapsed()
+                text.rotation.x = Math.sin(ellapsed*0.5)*0.3
+            }
+
+            if(fpsView) fpsView.update(delta)
+
+            if( renderPipeline ) await renderPipeline.render();
+            else await renderer.render( scene, camera );
+
+        }
+
+        function switchView( b ){
+
+            if(b){
+
+                scene.fog.density = 0
+                controls.target.copy( oldTarget );
+                camera.position.copy( oldPosition );
+                //
+                controls.enabled = true
+                controls.update();
+                fpsView.enabled = false
+                fpsView.debug(true)
+                ambient.intensity = 5
+
+                sound.setVolume(0)
+
+            } else {
+
+                scene.fog.density = 0.05
+                controls.enabled = false
+                fpsView.enabled = true
+                fpsView.debug(false)
+                ambient.intensity = 0
+
+                sound.setVolume(1)
+
+            }
+
+        }
+
+
+    </script>
+</body>
+</html>
