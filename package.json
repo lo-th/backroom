@@ -1,6 +1,10 @@
 {
   "name": "backroom",
   "version": "0.0.1",
+  "scripts": {
+    "build": "vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "three": "^0.185.1"
   },
