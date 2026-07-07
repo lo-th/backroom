@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 
 
 export class Sound  {
@@ -15,7 +15,7 @@ export class Sound  {
     	//console.log(this.master)
 
     	this.scene = scene;
-    	this.audioLoader = new THREE.AudioLoader().setPath('./sounds/')
+    	this.audioLoader = new THREE.AudioLoader().setPath('./assets/sounds/')
 
     	this.audioName = [
     	    'atmo_0', 'atmo_1', 'atmo_2', 'atmo_3', 'atmo_4',

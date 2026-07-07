@@ -9,8 +9,6 @@ import { boxBlur } from 'three/addons/tsl/display/boxBlur.js';
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { ssgi } from 'three/addons/tsl/display/SSGINode.js';
 import { traa } from 'three/addons/tsl/display/TRAANode.js';
-import { fxaa } from 'three/addons/tsl/display/FXAANode.js';
-import { ssr } from 'three/addons/tsl/display/SSRNode.js';
 import { temporalReproject } from 'three/addons/tsl/display/TemporalReprojectNode.js';
 import { recurrentDenoise } from 'three/addons/tsl/display/RecurrentDenoiseNode.js';
 import { denoise } from 'three/addons/tsl/display/DenoiseNode.js';
@@ -97,108 +95,7 @@ export class PostProd extends THREE.RenderPipeline {
 
     }
 
-    initSSR(){
-
-        const params = {
-            output: 0,
-            roughness: 0.3,
-
-            ssr: {
-                resolutionScale: 1,
-                quality: 0.25,
-                mirrorBias: 0.5,
-                maxDistance: 0.4,
-                intensity: 1,
-                thickness: 0.1,
-                maxLuminance: 35,
-                binaryRefine: false,
-                stepExponent: 3,
-                envImportanceSampling: false,
-                screenEdgeFade: 0.2,
-                screenEdgeFadeBlack: false, // for indoor scenes, set to true
-                environmentIntensity: 3.14, // not too sure why exactly, but multiplying by ~PI makes the env map reflections match Blender more
-            },
-
-            temporalReproject: {
-                maxFrames: 16,
-                clampIntensity: 0.25,
-                flickerSuppression: 1,
-                hitPointReprojection: true,
-            },
-
-            denoise: {
-                enabled: true,
-                lumaPhi: 0.75,
-                depthPhi: 20,
-                normalPhi: 0.3,
-                roughnessPhi: 100,
-                radius: 1.5,
-                alphaPhi: 5,
-                strength: 0.725,
-                adapt: 0.5,
-                smoothDisocclusions: true,
-                flickerSuppression: 1,
-                adaptiveTrust: 1
-            },
-
-            post: {
-                grading: { toneMapping: 'AgX', exposure: 1.57, gamma: 0.89, contrast: 1.31, saturation: 1 },
-            },
-        };
-
-        const hdrTexture = env
-
-        const ssrNode = ssr( scenePassColor, scenePassDepth, sceneNormal, {
-            stochastic: true,
-            diffuseNode: scenePassDiffuse,
-            metalnessNode: scenePassDiffuse.a,
-            roughnessNode: scenePassNormal.a,
-            environmentNode: hdrTexture,
-            envImportanceSampling: params.ssr.envImportanceSampling,
-            binaryRefine: params.ssr.binaryRefine
-        } );
-        ssrNode.setEnvMap( hdrTexture );
-        ssrNode.toInspector( 'SSR' );
-
-        const temporalReprojectNode = temporalReproject( ssrNode, scenePassDepth, scenePassNormal, scenePassVelocity, camera, {
-            mode: 'specular',
-            accumulate: false
-        });
-        temporalReprojectNode.toInspector( 'Temporal Reproject' );
-
-        const denoiseNode = recurrentDenoise( temporalReprojectNode, camera, {
-            depth: scenePassDepth,
-            normal: scenePassNormal,
-            raw: ssrNode,
-            metalRoughness: scenePassMetalRough,
-            mode: 'specular',
-            accumulate: true,
-        });
-        denoiseNode.alphaSource = 'raylength'; // SSR alpha channel contains ray length
-        denoiseNode.toInspector( 'Denoise' );
-        // feed the denoised result + velocity back into SSR for multi-bounce reflections
-        ssrNode.setHistory( denoiseNode, scenePassVelocity );
-        temporalReprojectNode.setHistoryTexture( denoiseNode );
-
-        const denoisePassBlend = vec4( denoiseNode.rgb, ssrNode.a.greaterThan( 0 ).toVar() );
-
-        gammaUniform = uniform( params.post.grading.gamma );
-        contrastUniform = uniform( params.post.grading.contrast );
-        saturationUniform = uniform( params.post.grading.saturation );
-
-        const litColor = scenePassColor.rgb.add( denoisePassBlend.rgb );
-
-        const outputNode = vec4( litColor, 1 );
-        outputNode.toInspector( 'Combined SSR' );
-        const combinedOutputNode = outputNode;
-
-        this.outputNode = this.applyPostProcessing( combinedOutputNode );
-        this.outputColorTransform = false;
-
-        this.applyParams(ssrNode, temporalReprojectNode, denoiseNode, params )
-
-    }
-
+    
 
 
     applyPostProcessing( source ) {
@@ -224,50 +121,6 @@ export class PostProd extends THREE.RenderPipeline {
 
     }
 
-    applyParams(ssrNode, temporalReprojectNode, denoiseNode, params ) {
-
-        if ( ! ssrNode ) return;
-
-            ssrNode.resolutionScale = params.ssr.resolutionScale;
-            ssrNode.quality.value = params.ssr.quality;
-            ssrNode.mirrorBias.value = params.ssr.mirrorBias;
-            // stepExponent / screenEdgeFadeBlack / binaryRefine are build-time constants: assigning
-            // them recompiles the SSR material (the setters no-op when the value is unchanged).
-            ssrNode.stepExponent = params.ssr.stepExponent;
-            ssrNode.binaryRefine = params.ssr.binaryRefine;
-            ssrNode.maxDistance.value = params.ssr.maxDistance;
-            ssrNode.intensity.value = params.ssr.intensity;
-            ssrNode.thickness.value = params.ssr.thickness;
-            ssrNode.maxLuminance.value = params.ssr.maxLuminance;
-            ssrNode.screenEdgeFade.value = params.ssr.screenEdgeFade;
-            ssrNode.screenEdgeFadeBlack = params.ssr.screenEdgeFadeBlack;
-            ssrNode.environmentIntensity.value = params.ssr.environmentIntensity;
-
-        if ( temporalReprojectNode ) {
-
-            temporalReprojectNode.maxFrames.value = params.temporalReproject.maxFrames;
-            temporalReprojectNode.clampIntensity.value = params.temporalReproject.clampIntensity;
-            temporalReprojectNode.flickerSuppression.value = params.temporalReproject.flickerSuppression;
-            temporalReprojectNode.hitPointReprojection.value = params.temporalReproject.hitPointReprojection;
-
-        }
-
-        if ( denoiseNode ) {
-
-            denoiseNode.lumaPhi.value = params.denoise.lumaPhi;
-            denoiseNode.depthPhi.value = params.denoise.depthPhi;
-            denoiseNode.normalPhi.value = params.denoise.normalPhi;
-            denoiseNode.roughnessPhi.value = params.denoise.roughnessPhi;
-            denoiseNode.radius.value = params.denoise.enabled ? params.denoise.radius : 0;
-            denoiseNode.alphaPhi.value = params.denoise.alphaPhi;
-            denoiseNode.strength.value = params.denoise.strength;
-            denoiseNode.adapt.value = params.denoise.adapt;
-            denoiseNode.smoothDisocclusions.value = params.denoise.smoothDisocclusions;
-            denoiseNode.flickerSuppression.value = params.denoise.flickerSuppression;
-            denoiseNode.adaptiveTrust.value = params.denoise.adaptiveTrust;
-
-        }
-    }
 
     initGi(){
 

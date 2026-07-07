@@ -1,5 +1,5 @@
 
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js'
@@ -17,8 +17,8 @@ export class Pool {
 		this.textures = {}
 		this.meshs = {}
 
-		this.ktx2 = new KTX2Loader().setPath( './textures/ktx2/' ).detectSupport( renderer );
-        this.ktx2.setTranscoderPath('./basis/');
+		this.ktx2 = new KTX2Loader().setPath( './assets/textures/ktx2/' ).detectSupport( renderer );
+        this.ktx2.setTranscoderPath('./assets/basis/');
 
 	}
 
@@ -26,11 +26,11 @@ export class Pool {
 
         // font
 
-        this.font = await new FontLoader().loadAsync( './font/helvetiker_bold.typeface.json' );
+        this.font = await new FontLoader().loadAsync( './assets/font/helvetiker_bold.typeface.json' );
 
         // envmap
 
-        const hdrLoader = new HDRLoader().setPath( './textures/' )
+        const hdrLoader = new HDRLoader().setPath( './assets/textures/' )
 
         let t = await hdrLoader.loadAsync( 'box3.hdr' );
         t.mapping = THREE.EquirectangularReflectionMapping;
@@ -43,7 +43,7 @@ export class Pool {
 		// model
 
 		const draco = new DRACOLoader()
-        const glb = await new GLTFLoader().setDRACOLoader( draco ).setCrossOrigin('anonymous').loadAsync( './models/backroom.glb' );
+        const glb = await new GLTFLoader().setDRACOLoader( draco ).setCrossOrigin('anonymous').loadAsync( './assets/models/backroom.glb' );
 
         glb.scene.traverse( ( child ) => {
 
