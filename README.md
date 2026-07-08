@@ -10,5 +10,4 @@ SPACE to jump<br>
 
 ### About
 
-Generator use pieces of D&D dungeon generator<br>
-from Mystic Waffle<br>
+Generator use pieces of D&D dungeon generator v1<br>
