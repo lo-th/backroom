@@ -11,7 +11,8 @@ SPACE to jump<br>
 ### About
 
 Is not vibe coded project. Source is hide for the moment.<br>
-Generator use pieces of D&D dungeon v1<br><br>
+Generator use pieces of D&D dungeon v1.<br>
+Render use three.js webgpu with ssgi<br><br>
 
 I have lots of ideas for the next version,<br> 
 if you enjoy the project help me by sponsoring it<br>
