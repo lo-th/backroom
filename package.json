@@ -1,7 +1,7 @@
 {
-  "name": "jsm",
+  "name": "backroom",
   "version": "0.0.1",
-  "description": "",
+  "description": "three.js luminal space",
   "scripts": {
     "build": "rollup -c \"rollup_config.js\"",
     "start": "http-server ./ -c-1 -a localhost -p 8522 -o ./index.html"
