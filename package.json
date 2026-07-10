@@ -10,12 +10,13 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "three": "0.185.1"
+    "three": "0.185.1",
+    "three-mesh-bvh": "^0.9.10"
   },
   "devDependencies": {
-    "rollup": "^4.6.0",
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@rollup/plugin-terser": "^1.0.0",
-    "http-server": "14.1.1"
+    "http-server": "14.1.1",
+    "rollup": "^4.6.0"
   }
 }
