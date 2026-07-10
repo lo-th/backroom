@@ -12,6 +12,7 @@ SPACE to jump<br>
 
 No AI, source is hide for the moment.<br>
 Generator use pieces of D&D dungeon v1.<br>
+Physics use three-mesh-bvh.<br>
 Render use three.js webgpu with ssgi.<br><br>
 
 Have lots of ideas for the next version,<br> 
